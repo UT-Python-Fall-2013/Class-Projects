@@ -1,0 +1,5 @@
+##run command with absent parent
+>VCF_to_OneMap_input.py -i variants_15_0.8.vcf -o TEST -p1 HELLOWORLD -p2 K209.trim.sam
+
+##run command
+>VCF_to_OneMap_input.py -i variants_15_0.8.vcf -o TEST -p1 K208.trim.sam -p2 K209.trim.sam
