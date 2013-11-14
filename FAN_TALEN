@@ -1,0 +1,109 @@
+def loadfile():
+    from Bio import SeqIO
+    global  genomic_DNA
+    file=input("Which fasta file do you want to process?:")
+    infile=open(file,"r")
+    record=SeqIO.read(infile, "fasta")
+    print ("This is the sequence named:", record.id)
+    print ("The full sequence is:\n",record.seq)
+    genomic_DNA=str(record.seq)   
+	
+def arm_length():
+    global arm_length
+    arm_length=eval(input("please choose the arm length(25-29):")   )
+   
+	
+def gap_length():
+    global gap_min, gap_max
+    gap_min, gap_max=eval(input("please choose the gap range(10,20):"))
+
+def extron_extract():
+    global genomic_DNA
+    Exon_start=[1]
+    Exon_end=[]
+    Exon_list=[]
+    for i in range(0,len(genomic_DNA)-1):
+         if ord(genomic_DNA[i])<96 and ord(genomic_DNA[i+1])>96:
+               Exon_end.append(i)
+         elif ord(genomic_DNA[i])>96 and ord(genomic_DNA[i+1])<96:
+               Exon_start.append(i+1)
+               
+    for i in range(0,len(Exon_start)):
+        exon=genomic_DNA[Exon_start[i]:(Exon_end[i]+1)]
+        Exon_list.append(exon)
+    return(Exon_list)
+
+def arms(Exon_list):
+    
+    global arm_length ,gap_min, gap_max,arms_list
+    arms_list=[]
+    for exon in Exon_list:
+        if len(exon)>(2*arm_length+gap_min):
+            for i in range(0,len(exon)- (2*arm_length+gap_min)+1):
+                if exon[i]=="T" :
+                    limit=min(2*arm_length+gap_max,len(exon))
+                    for i2 in range((i+(2*arm_length+gap_min)),limit):
+                        if exon[i2]=="T":
+                               arm_left=exon[i:i+arm_length]
+                               arm_right=exon[(i2-arm_length)+1:i2+1]
+                               arms_list.append(arm_left)
+                               arms_list.append(arm_right)
+                               
+    outfile1=open("arms.fasta","w")
+    for i in range (0,len(arms_list)):
+        print(">armpair",(i//2)+1,"arm",i%2+1,"\n",str(arms_list[i]),"\n\n",file=outfile1)
+
+               
+def well_num(arm):
+	plate_code = {"C1":"A1","C2":"A2","C3":"A3","C4":"A4","C5":"A5",
+	"C6":"A6","C7":"A7","C8":"A8","C9":"A9","C10":"A10",
+	"T1":"A11","T2":"A12","T3":"B1","T4":"B2","T5":"B3",
+	"T6":"B4","T7":"B5","T8":"B6","T9":"B7","T10":"B8",
+	"A1":"B9","A2":"B10","A3":"B11","A4":"B12","A5":"C1",
+	"A6":"C2","A7":"C3","A8":"C4","A9":"C5","A10":"C6",
+	"G1":"C7","G2":"C8","G3":"C9","G4":"C10","G5":"C11",
+	"G6":"C12","G7":"D1","G8":"D2","G9":"D3","G10":"D4",}
+	Nuc_code=[]
+	kit_code=[]
+	for i in range(0,len(arm)):
+		Nuc=arm[i]+str(i+1)
+		Nuc_code.append(Nuc)
+		well_number=plate_code[Nuc]
+		kit_code.append(well_number)
+	print (Nuc_code,)
+	print ("The corresponding well number is :\n",kit_code,"\n")
+
+def arm_plate():
+     global arms_list,gap_min,gap_max
+     for i in range (0,len(arms_list)):
+          arm=arms_list[i]
+          print ("************************************************************************")
+          print ("Talen_armpair",(i//2)+1,"arm",i%2+1)
+          print("The length is",len(arm),"bp")
+          print("The gap is in range",gap_min,"to",gap_max)
+          print("The Sequence is\n",arms_list[i],"\n")
+          print("the first 10 base:")
+          well_num(arm[0:10])
+          print("the second 10 base:")
+          well_num(arm[10:20])
+          
+          print("the rest base:")
+          well_num(arm[20:len(arm)+1])
+          print ("*************************************************************************\n")
+        
+     
+		
+def main():
+    loadfile()
+    arm_length()
+    gap_length()
+    Exon_list=extron_extract()
+    arms(Exon_list)
+    arm_plate()
+    
+main()
+
+
+	
+
+		
