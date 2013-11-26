@@ -1,0 +1,140 @@
+import arcpy
+import numpy
+import scipy
+from arcpy import env
+from arcpy.sa import *
+from scipy import stats
+
+#Need this for the license
+arcpy.CheckOutExtension("Spatial")
+
+def GetCutRasters():
+
+    #Set up error handling
+    try:
+        #Set path to working directory
+        #Get user input
+        WD_PATH = str(input("Enter the path to your working directory: "))
+        #Get directory to save files
+        SAVE_PATH = str(input("Enter the path to the directory in which you wish to save the cut rasters: "))
+        #Set workspace
+        arcpy.env.workspace = WD_PATH
+
+        #Get number of rasters to be processed
+        X = eval(input("How many rasters do you wish to cut: "))
+    
+        #Get masking feature
+        MASK_PATH = str(input("Enter the filepath to the masking shapefile/raster feature: "))
+        MASK = MASK_PATH
+    
+        #Get raster paths
+        #If more than 1 raster
+        if X > 1:
+            #Set up empty list to store paths
+            PATHS = []
+            #Get first one
+            FIRST_RASTER = str(input("Enter the filepath to the first raster: "))
+            FIRST_RASTER_LIST = [FIRST_RASTER]
+            #Add path to list of paths
+            PATHS = PATHS + FIRST_RASTER_LIST
+            for i in range[X-1]:
+                #Get all the other rasters, this just makes the prompts look nice
+                PATH_NAME = str(input("Enter the filepath to the next raster: "))
+                PATH_NAME_LIST = [PATH_NAME]
+                PATHS = PATHS + PATH_NAME_LIST
+            print "The cut rasters are saved in the directory specified and named Extract1, Extract2, etc."
+            for i in range[X]:
+                #Convert to raster object - required for function below to work
+                RASTER = raster(PATHS[i])
+                #Cut the raster - arcpy.sa function
+                OUT_EXTRACT_BY_MASK = ExtractByMask(MASK, RASTER)
+                #Save cut raster
+                #Use string formatting to name them
+                OUT_EXTRACT_BY_MASK.save = "Extract{0}".format(i + 1)
+        else:
+            PATH = str(input("Enter the filepath to the first raster: "))
+            RASTER = raster(PATH)
+            OUT_EXTRACT_BY_MASK = ExtractByMask(MASK, RASTER)
+            OUT_EXTRACT_BY_MASK.save = "Extracted".format(i)
+            print "The cut raster is saved in the directory specified named Extracted"
+
+    except:
+        print "The program failed"
+        #Get specific error message inc. code
+        print arcpy.GetMessages()
+
+def CheckSample():
+
+    try:
+        #Needs 'equal areas' values - easy to get from R
+        #Set path to working directory
+        #Get user input
+        WD_PATH = str(input("Enter the path to your working directory: "))
+        #Set workspace
+        arcpy.env.workspace = WD_PATH
+
+        #Get location data - best as point shapefile
+        LOC_PATH = str(input("Enter the path to your locations data: "))
+        LOCATIONS = LOC_PATH
+        #Get number of locations
+        LOC_NUMBER = int(eval(input("Enter the number of locations: ")))
+    
+        #Use interpolation
+        INTERPOLATION = str(input("Would you like to use interpolation? Enter 'NONE' or 'BILINEAR'")
+    
+        #Get number of rasters you wish to sample
+        X = int(eval(input("Enter the number of environmental raster you wish to check randomness against: ")))
+        #Set up lists for layer names and paths; also store as tuples
+        PATH/NAMES = []
+        PATHS = []
+        NAMES = []
+        #Get names and paths
+        for i in range[X]:
+            RASTER_PATH = [str(input("Enter the path to a raster: "))]
+            PATHS = PATHS + RASTER_PATH
+            RASTER_NAME = [str(input("Enter a name for the layer: "))]
+            NAMES = NAMES + RASTER_NAME
+            PERCENTILES = numpy.array(input("Enter the percentiles of the quantiles you wish to use from 0-100 (must be equal intervals): "))
+             
+            PATHS_NAMES_TUPLE = [RASTER_PATH, RASTER_NAME]
+            PATH/NAMES = PATH/NAMES + PATHS_NAMES_TUPLE
+        #Set up empty list to store raster objects
+        RASTERS = []
+
+        #Get values for each layer at your sample points
+        arcpy.sa.ExtractMultiValuesToPoints(PATH_NAMES_TUPLE, LOCATIONS, INTERPOLATION)
+
+        #Turn values into array
+        ATTRIBUTES = arcpy.da.TableToNumPyArray(LOCATIONS, NAMES)
+
+        #Get array for each raster
+        LIST_RASTER_ATTRIBUTES = []
+        for i in range[X]:
+            RASTER = PATHS[i]
+            RASTER_ATTRIBUTES = arcpy.da.RasterToNumPyArray(RASTER)
+            LIST_RASTER_ATTRIBUTES = LIST_RASTER_ATTRIBUTES + RASTER_ATTRIBUTES
+
+        #Check against null hypothesis
+        for i in range[X]:
+            #Get relevant values
+            DATA = ATTRIBUTES[:,i]
+            RASTER_DATA = LIST_RASTER_ATTRIBUTES[i]
+            BREAKPOINTS = numpy.percentile(RASTER_DATA, PERCENTILE)
+            #Use histogram function to get number of locations in each bin
+            HISTOGRAM = numpy.histogram(DATA, bins=BREAKPOINTS)
+            #Get observed values - first item in histogram output
+            OBSERVED_VALUES = HISTOGRAM[0]
+            #Do chi-square test - will use an equal distribution as null
+            TEST = scipy.stats.chisquare[OBSERVED_VALUES]
+            #Get p-value, 1st item in chi-square output
+            PVAL = TEST[0]
+            #Let user know what the results is
+            if PVAL < 0.05:
+                print "Your sample is not randomized with respect to", NAMES[i], "with a p-value of", PVAL
+            else:
+                print "Your sample is randomized with respect to", NAMES[i], "with a p-value of", PVAL
+
+    #Error handling
+    except:
+        print "The program failed"
+        print arcpy.GetMessages()
