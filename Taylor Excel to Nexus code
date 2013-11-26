@@ -1,0 +1,82 @@
+#And so it began....
+
+#1 recreate pyron and wiens tree
+#2 get data in format for dendropy
+#3 import all in and run PIC
+#4 interpret results
+import xlrd
+filename=input("This program takes an excel document with continuous characters and converts it into a data matrix in Nexus format:")
+book=xlrd.open_workbook(filename)
+#only works for POSITIVE CONTINUOUS TRAITS*
+
+sheet0 = book.sheet_by_index(0)
+column=eval(input("Enter the number of a column with the most important data"))
+column1=eval(input("Enter the number of a column with the less important data"))
+genus=eval(input("Enter column with genus name"))
+species=eval(input("Enter column with species name"))
+#asking for inputs for stuff needed
+
+test=sheet0.col(species)
+test1=sheet0.col(genus)
+test2=sheet0.col(column) 
+test3=sheet0.col(column1)
+#create variables to hold data
+
+#making a list that will include if either trait is there, otherwise it is -1
+#chose -1, bc neither size nor elevation (
+list=[-1]*len(test2)
+for x in range(0,len(test2)):
+	if sheet0.cell_type(x,column) or sheet0.cell_type(x,column1)==2:
+		list[x]=x
+#cell_type=2 means it is a number
+
+#these lines remove the side effects of being cells in excel
+#so I can combine species and genus with an underscore for species that have
+# the trait(s) I want
+holder1=str(test[2:len(test)]).replace('text:u','')
+holder1=holder1.replace(']','')
+holder1=holder1.replace("'","")
+holder1=holder1.replace(' ','')
+holder1=holder1.replace('[','')
+list2=holder1.split(',')
+
+holder=str(test1[2:len(test1)]).replace('text:u','')
+holder=holder.replace(']','')
+holder=holder.replace("'","")
+holder=holder.replace(' ','')
+holder=holder.replace('[','')
+list1=holder.split(',')
+
+lists=[-1]*len(list1)
+#merge species and genus name with underscore between
+for x in range(0,len(list1)):
+    lists[x]=str(list1[x]+ '_' +list2[x])
+    
+#for the values in list, merge 1 and 2 columns
+#merge with underscore
+for value in range(0,len(list)):
+	if list[value]==-1:
+		lists[value]=-1
+        
+lists=[x for x in lists if x != -1]
+list=[x for x in list if x != -1]
+#now I have the species names in the proper format and ONLY for those
+#species that have size
+#now to output in a way that can be saved as a nexus
+#write output file, possibly as text
+start='#NEXUS \nBEGIN DATA; \n   DIMENSIONS NTAX='+str(len(lists))+' NCHAR=2; \n   FORMAT DATATYPE = CONTINUOUS MISSING = ?;\n   MATRIX \n'
+
+filler=str(test3).replace('number:','').replace("empty:''",'?')
+list3=filler.split(',')
+filler1=str(test2).replace('number:','').replace("empty:''",'?')
+list4=filler1.split(',')
+#removed these relics of being a cell so it wouldn't mess up the formatting in the nexus file
+
+for x in range(1,len(lists)):
+    start+='   '+"{: <50}{: <30}{: <5}".format(lists[x].replace('"','').replace('?','').replace('.',''),list4[list[x]],list3[list[x]])+'\n'
+start+='\n   ; \nEND;'    
+outfile = open('frog characters.nex', "w")
+print >> outfile, start
+    
+    
+#end;
