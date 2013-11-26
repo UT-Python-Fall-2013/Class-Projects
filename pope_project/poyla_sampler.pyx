@@ -1,8 +1,9 @@
 # cython: profile=True
 
 #####################################################
-#	MCMC functions-Poyla-Gamma multinomial model 	#
-# 	Nate Pope										#
+#	MCMC functions-Poyla-Gamma multinomial model 
+# 	Nate Pope						
+#	using Poyla-Gamma sampling scheme of Polson et al. 2012 JASA
 #####################################################
 
 ##################
