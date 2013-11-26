@@ -1,0 +1,12 @@
+Python/Cython modules
+
+Ceygen: basic BLAS routines for memoryviews. Allows some linear algebra in pure Cython (no Numpy)
+Cython: hybrid of C and Python
+yep: complex profiling of code (for determining which parts of the code are speed bottlenecks)
+matplotlib: plotting routines
+time: for getting/converting system time
+
+C modules
+
+GSL: random number generators, probability densities, BLAS routines, and lots more. Way faster than pure Python
+Math: C math library; stuff like square root, power, absolute value, etc. Way faster than pure Python
