@@ -1,9 +1,6 @@
 #And so it began....
 
-#1 recreate pyron and wiens tree
-#2 get data in format for dendropy
-#3 import all in and run PIC
-#4 interpret results
+
 import xlrd
 filename=input("This program takes an excel document with continuous characters and converts it into a data matrix in Nexus format:")
 book=xlrd.open_workbook(filename)
