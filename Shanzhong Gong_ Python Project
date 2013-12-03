@@ -1,0 +1,246 @@
+#This project is to calculate and compare the rates of product formation among three enzymes.
+
+from tkinter import *
+
+master = Tk()
+
+#Add label and input data
+L1 = Label(master, text = "[E],uM:")
+L1.pack(side = "left")
+L1.grid(row=0, sticky=W)
+E1 = Entry(master)
+E1.pack(side = "right")
+E1.grid(row=0, column=1)
+
+L2 = Label(master, text = "[S],uM:")
+L2.pack(side = "left")
+L2.grid(row=1, sticky=W)
+E2 = Entry(master)
+E2.pack(side = "right")
+E2.grid(row=1, column=1)
+
+L3 = Label(master, text = "Time(s):")
+L3.pack(side = "left")
+L3.grid(row=2, sticky=W)
+E3 = Entry(master)
+E3.pack(side = "right")
+E3.grid(row=2, column=1)
+
+L4 = Label(master, text = "Wild type (k1, k-1):")
+L4.pack(side = "left")
+L4.grid(row=3, sticky=W)
+E4 = Entry(master)
+E4.pack(side = "right")
+E4.grid(row=3, column=1)
+
+L5 = Label(master, text = "Mutant 1 (k1,k-1),uM:")
+L5.pack(side = "left")
+L5.grid(row=4, sticky=W)
+E5 = Entry(master)
+E5.pack(side = "right")
+E5.grid(row=4, column=1)
+
+L6 = Label(master, text = "Mutant 2 (k1,k-1),uM:")
+L6.pack(side = "left")
+L6.grid(row=5, sticky=W)
+E6 = Entry(master)
+E6.pack(side = "right")
+E6.grid(row=5, column=1)
+
+L7 = Label(master, text = "Wild type (k1, k-1):")
+L7.pack(side = "left")
+L7.grid(row=3, sticky=W)
+E7 = Entry(master)
+E7.pack(side = "right")
+E7.grid(row=3, column=2)
+
+L8 = Label(master, text = "Mutant 1 (k1,k-1),uM:")
+L8.pack(side = "left")
+L8.grid(row=4, sticky=W)
+E8 = Entry(master)
+E8.pack(side = "right")
+E8.grid(row=4, column=2)
+
+L9 = Label(master, text = "Mutant 2 (k1,k-1),uM:")
+L9.pack(side = "left")
+L9.grid(row=5, sticky=W)
+E9 = Entry(master)
+E9.pack(side = "right")
+E9.grid(row=5, column=2)
+
+
+#Get the input values and do the plotting
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+def rates():
+    #Calculations of observed rate(k1*S+ka,k2*S+kb,k3*S+kc)
+    N=3
+    k1=float(E4.get())
+    k2=float(E5.get())
+    k3=float(E6.get())
+    ka=float(E7.get())
+    kb=float(E8.get())
+    kc=float(E9.get())
+    S=float(E2.get())
+    kobs1=k1*S+ka
+    kobs2=k2*S+kb
+    kobs3=k3*S+kc
+   
+    #Show the result
+    k = (kobs1,kobs2,kobs3)
+    mutant=('WT','M1','M2')
+    ind= np.arange(N)
+    width=0.35
+    plt.subplot(3,1,1)
+    p1=plt.bar(ind,k,width,color='g')
+    plt.ylabel('Rate (s-1)')
+    if (kobs1>kobs2>kobs3):
+        plt.xlabel("Both Mutant1 and Mutant2 decrease the rate; WT > Mutant1 > Mutant2")
+    elif (kobs1>kobs3>kobs2):
+        plt.xlabel("Both Mutant1 and Mutant2 decrease the rate; WT > Mutant2 > Mutant1")
+    elif (kobs1>kobs3==kobs2):
+        plt.xlabel("Both Mutant1 and Mutant2 decrease the rate; WT > Mutant2 = Mutant1")
+    elif (kobs1==kobs3>kobs2):
+        plt.xlabel("Only Mutant1 decreases the rate; WT = Mutant2 > Mutant1")
+    elif (kobs1==kobs2>kobs3):
+        plt.xlabel("Only Mutant2 decreases the rate; WT = Mutant1 > Mutant2")
+    elif (kobs1<kobs2<kobs3):
+        plt.xlabel("Both Mutant 1 and Mutant 2 increase the rate; WT < Mutant1 < Mutant2")
+    elif (kobs1<kobs3<kobs2):
+        plt.xlabel("Both Mutant 1 and Mutant 2 increase the rate; WT < Mutant2 < Mutant1")
+    elif (kobs1<kobs3==kobs2):
+        plt.xlabel("Both Mutant 1 and Mutant 2 increase the rate; WT < Mutant2 = Mutant1")
+    elif (kobs1==kobs3<kobs2):
+        plt.xlabel("Only Mutant 1 increase the rate; WT = Mutant2 < Mutant1")
+    elif (kobs1==kobs2<kobs3):
+        plt.xlabel("Only Mutant 2 increase the rate; WT = Mutant1 < Mutant2")
+    elif (kobs3>kobs1>kobs2):
+        plt.xlabel("Mutant 2 increases the rate, Mutant 1 decreases the rate; Mutant2 > WT > Mutant1")
+    elif (kobs2>kobs1>kobs3):
+        plt.xlabel("Mutant 1 increases the rate; Mutant 2 decreases the rate; Mutant1> WT > Mutant2")
+    else:
+        plt.xlabel("Both Mutant1 and Mutant2 does not make change to the enzyme")
+        
+    plt.title('Rate Comparison Between Enzymes')
+    plt.xticks(ind+width/2.,('WT','M1','M2'))
+
+    plt.show()
+
+#Make a button and plot
+
+submit = Button(master, text="Calculate Rates", width=15, command = rates)
+submit.grid(row=6,column=1)
+
+def ES():
+    #Calculations of observed rate(k1*S+ka,k2*S+kb,k3*S+kc)
+    N=3
+    k1=float(E4.get())
+    k2=float(E5.get())
+    k3=float(E6.get())
+    ka=float(E7.get())
+    kb=float(E8.get())
+    kc=float(E9.get())
+    S=float(E2.get())
+    E=float(E1.get())
+    t=float(E3.get())
+    kobs1=k1*S+ka
+    kobs2=k2*S+kb
+    kobs3=k3*S+kc
+    A1=k1*S/kobs1
+    A2=k2*S/kobs2
+    A3=k3*S/kobs3
+    ES1=A1*E*(1-np.exp((-kobs1)*t))
+    ES2=A2*E*(1-np.exp((-kobs2)*t))
+    ES3=A3*E*(1-np.exp((-kobs3)*t))
+
+    #Show the result
+    ES=(ES1,ES2,ES3)
+    mutant=('WT','M1','M2')
+    ind= np.arange(N)
+    width=0.35
+    plt.subplot(3,1,3)
+    p1=plt.bar(ind,ES,width,color='r')
+    plt.ylabel('[ES],uM')
+    if (ES1>ES2>ES3):
+        plt.xlabel("WT > Mutant1 > Mutant2")
+    elif (ES1>ES3>ES2):
+        plt.xlabel("WT > Mutant2 > Mutant1")
+    elif (ES1>ES3==ES2):
+        plt.xlabel("WT > Mutant2 = Mutant1")
+    elif (ES1==ES3>ES2):
+        plt.xlabel("WT = Mutant2 > Mutant1")
+    elif (ES1==ES2>ES3):
+        plt.xlabel("WT = Mutant1 > Mutant2")
+    elif (ES1<ES2<ES3):
+        plt.xlabel("WT < Mutant1 < Mutant2")
+    elif (ES1<ES3<ES2):
+        plt.xlabel("WT < Mutant2 < Mutant1")
+    elif (ES1<ES3==ES2):
+        plt.xlabel("WT < Mutant2 = Mutant1")
+    elif (ES1==ES3<ES2):
+        plt.xlabel("WT = Mutant2 < Mutant1")
+    elif (ES1==ES2<ES3):
+        plt.xlabel("WT = Mutant1 < Mutant2")
+    elif (ES3>ES1>ES2):
+        plt.xlabel("Mutant2 > WT > Mutant1")
+    elif (ES2>ES1>ES3):
+        plt.xlabel("Mutant1> WT > Mutant2")
+    else:
+        plt.xlabel("Mutant1=Mutant2=WT")
+        
+    plt.title('Product Formation Comparison Between Enzymes')
+    plt.xticks(ind+width/2.,('WT','M1','M2'))
+
+    plt.show()
+        
+#Make a button and plot
+
+submit = Button(master, text="Prodct Formation", width=15, command = ES)
+submit.grid(row=6,column=2)
+
+#Add a table to the figure
+def Table():
+    #Parameters calculations
+    N=3
+    k1=float(E4.get())
+    k2=float(E5.get())
+    k3=float(E6.get())
+    ka=float(E7.get())
+    kb=float(E8.get())
+    kc=float(E9.get())
+    S=float(E2.get())
+    E=float(E1.get())
+    t=float(E3.get())
+    kobs1=k1*S+ka
+    kobs2=k2*S+kb
+    kobs3=k3*S+kc
+    A1=k1*S/kobs1
+    A2=k2*S/kobs2
+    A3=k3*S/kobs3
+    ES1=A1*E*(1-np.exp((-kobs1)*t))
+    ES2=A2*E*(1-np.exp((-kobs2)*t))
+    ES3=A3*E*(1-np.exp((-kobs3)*t))
+
+    #Hide subplot ES
+    ax=plt.subplot(3,1,3, frame_on=False)
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+
+    #Add a table
+    col_labels=['WT','Mutant1','Mutant2']
+    row_labels=['k value','[ES],uM']
+    table_vals=[kobs1,kobs2,kobs3],[ES1,ES2,ES3]
+    the_table = plt.table(cellText=table_vals,colWidths = [0.35]*3,rowLabels=row_labels,colLabels=col_labels,fontsize=24,loc="center")
+    plt.title('Product Formation and Rate Contants Comparison')
+
+    plt.show()
+
+    
+#Make a button and plot
+
+submit = Button(master, text="Table", width=15, command = Table)
+submit.grid(row=2,column=2)
+
+
