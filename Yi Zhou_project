@@ -1,0 +1,245 @@
+# Taqman_primer.py
+# A program to design Taqman qPCR primer pair/probe combination across specific restriction sites.
+# The user will be prompted to enter the FASTA file in which the DNA sequence is stored,
+# the restriction enzyme sequence across which the primer/probe will be designed,
+# and the parameters for primer/probe designing.
+# The result will be delivered to the screen as well as being saved to an output file.
+
+from Bio import SeqIO  # import SeqIO module
+from Bio.Seq import Seq # import Seq module
+from Bio.SeqUtils import GC # count percentage of GC
+from Bio.Seq import reverse_complement # get the reverse complement sequence
+
+
+# define a function to calculate the melting temperature (Tm value) of an oligo
+def Melt_temp(DNA):
+    Tm=2*(DNA.count("A")+DNA.count("T"))+4*(DNA.count("G")+DNA.count("C"))
+    return Tm
+
+
+
+# define a function to count the number of four consecutive nucleotide
+# pairs (a dimer) between two DNA sequences. Define four consecutive nucleotide pair as a dimer.
+def dimer_check(DNA1, DNA2):
+    # dictionary used for indetify nucleotide pair
+    Pair={"A":"T", "T":"A", "C":"G", "G":"C"}
+    dimerNum1=0
+    dimerNum2=0
+    # scan from 5' to 3' of DNA1
+    for i in range(len(DNA1)-3):
+        # scan from 5' to 3' of DNA2
+        for j in range(len(DNA2)-3):
+            # check if the two DNA sequences match at four consecutive nucleotide in the same direction
+            if DNA1[i]==Pair[DNA2[j]] and DNA1[i+1]==Pair[DNA2[j+1]] \
+               and DNA1[i+2]==Pair[DNA2[j+2]] and DNA1[i+3]==Pair[DNA2[j+3]]:
+                dimerNum1 = dimerNum1 + 1
+
+        # scan from 3' to 5' of DNA2
+        for k in range(len(DNA2)-1, 3, -1):
+            # check if the two DNA sequences match at four consecutive nucleotide in opposite direction
+            if DNA1[i]==Pair[DNA2[k]] and DNA1[i+1]==Pair[DNA2[k-1]] \
+               and DNA1[i+2]==Pair[DNA2[k-2]] and DNA1[i+3]==Pair[DNA2[k-3]]:
+                dimerNum2 = dimerNum2 + 1
+        
+    dimerNum = dimerNum1 + dimerNum2
+    
+    return dimerNum
+
+
+
+def main(): 
+    while True:
+        # input the FASTA file
+        fname = input("\nPlease enter the FASTA filename: ") 
+        try:
+            # extract the DNA sequence from the fasta file
+            seq_record=SeqIO.read(fname, "fasta")
+            # print the DNA sequence
+            print ("\nThe DNA sequence is:\n", seq_record.seq)
+            # find the file, break the while loop
+            break
+
+        # Error handling. If the file entered doesn't exist, prompt the user to enter a different file name.
+        except IOError: 
+            print("\nFILE DOES NOT EXIST!!! PLEASE CHOOSE A DIFFERENT FILE!")
+
+    # A big while loop. If primer/probe can be found with the user-entered parameters,
+    # print the results and save the results to a output file. If no primer/probe combination can
+    # be found, prompt the user to modify the parameters and the program will rerun automatically.
+    while True:
+        # enter all parameters
+        primerlen_min=eval(input("\nPlease enter the minimum primer length: "))
+        primerlen_max=eval(input("\nPlease enter the maxium primer length: "))
+        primerTm_min=eval(input("\nPlease enter the minimum primer melting temperature: "))
+        primerTm_max=eval(input("\nPlease enter the maximum primer melting temperature: "))
+        productlen_min=eval(input("\nPlease enter the minimum PCR product length: "))
+        productlen_max=eval(input("\nPlease enter the maximum PCR product length: "))
+        probelen_min=eval(input("\nPlease enter the minimum probe length: "))
+        probelen_max=eval(input("\nPlease enter the maxium probe length: "))
+        probeGC_min=eval(input("\nPlease enter the minimum probe GC content: "))
+        probeGC_max=eval(input("\nPlease enter the maxium probe GC content: "))
+
+        # limit the number of primer/probe combinations shown on the screen
+        Result_Num=eval(input("\nPlease enter the maxium number of primer/probe combinations to be displayed: ")) 
+
+        # enter the restriction site across which primers and probe will be designed
+        enzyme=input("\nPlease enter the restriction enzyme sequence (UPPER CASE): ")
+        # find the location of the target restriction site in the DNA sequece
+        enzyme_locus=seq_record.seq.find(enzyme) 
+
+        # check whether the restriction site exists in the sequece or whether it's to close to DNA ends
+        while enzyme_locus < primerlen_min or enzyme_locus + primerlen_min > len(seq_record.seq):
+            print("\nThe restriction site you entered doesn't exist or is too close to DNA ends!!! Please select a different enzyme!")
+            # prompt the user to choose a different restriction enzyme site
+            enzyme=input("\nPlease enter a DIFFERENT restriction enzyme sequence (UPPER CASE): ") 
+            enzyme_locus=seq_record.seq.find(enzyme)
+
+        # determine forward primer target sequence before the restriction enzyme sequence
+        ## if the DNA fragment before the restriction enzyme sequence is not longer than productlen_max,
+        ## set the whole fragment as forward primer target sequence
+        if enzyme_locus <= productlen_max:
+            FwPrimer_target_seq=seq_record.seq[:enzyme_locus]
+        ## if the DNA fragment before the restriction enzyme sequence is longer than productlen_max,
+        ## take the fragment before the restriction site with the length of PCR product as forward primer target sequence
+        else: 
+            FwPrimer_target_seq=seq_record.seq[enzyme_locus-productlen_max:enzyme_locus]
+        print("\nForward primer target sequence is: ", FwPrimer_target_seq)
+
+        # determine reverse primer target sequence after the restiction site in the same way as determining forward primer target
+        if enzyme_locus+len(enzyme)+productlen_max<=len(seq_record.seq):
+            RevPrimer_target_seq=seq_record.seq[enzyme_locus+len(enzyme):enzyme_locus+len(enzyme)+productlen_max]
+        else:
+            RevPrimer_target_seq=seq_record.seq[enzyme_locus+len(enzyme):]
+        print("\nReverse primer target sequence is: ", RevPrimer_target_seq)
+
+        # determine probe target sequence, including part of forward primer target sequence,
+        # part of reverse primer target sequence and the enzyme sequence
+        Probe_target_seq=FwPrimer_target_seq[primerlen_max:]+enzyme+RevPrimer_target_seq[:len(RevPrimer_target_seq)-primerlen_max]
+        print("\nProbe target sequence is: ", Probe_target_seq)
+
+        # set a list to store potential forward primers
+        FwPrimer=[]
+        # set a list to store the reverse complement sequences of potential reverse primers
+        RevPrimer=[] 
+        for j in range (primerlen_min,primerlen_max+1):
+            for i in range (len(FwPrimer_target_seq)-j+1):
+                # store all potential forward primers with Tm value between primerTm_min and primerTm_max and less than one auto-dimer
+                if Melt_temp(FwPrimer_target_seq[i:i+j])>=primerTm_min and Melt_temp(FwPrimer_target_seq[i:i+j])<=primerTm_max \
+                   and dimer_check(FwPrimer_target_seq[i:i+j], FwPrimer_target_seq[i:i+j])<=1:
+                    FwPrimer.append(FwPrimer_target_seq[i:i+j]) 
+
+            for i in range (len(RevPrimer_target_seq)-j+1):
+                # store all reverse complement sequences of potential reverse primers with Tm value between primerTm_min and primerTm_max
+                # and less than one auto-dimer
+                if Melt_temp(RevPrimer_target_seq[i:i+j])>=primerTm_min and Melt_temp(RevPrimer_target_seq[i:i+j])<=primerTm_max \
+                   and dimer_check(RevPrimer_target_seq[i:i+j], RevPrimer_target_seq[i:i+j])<=1:
+                    RevPrimer.append (RevPrimer_target_seq[i:i+j]) 
+    
+        # set a list to store potential probes
+        Probe=[] 
+        for j in range (probelen_min,probelen_max+1):
+            for i in range (len(Probe_target_seq)-j+1):
+                # Probe should have more C residues than G residues to minimize reporter fluorescence quenching.
+                # If not, design the probe using the anti-sense strand.
+                if Probe_target_seq [i:i+j].count("C")<Probe_target_seq [i:i+j].count("G"): 
+                    RC=reverse_complement(Probe_target_seq [i:i+j])
+                    # 1st and 2nd residue at 5' end cannot be "G"; GC content meets requirement; No 4 consecutive "G" or 6 consecutive "A";
+                    # less than 2 "CC" dinucleotides; less than one auto-dimer
+                    if RC[0]!="G" and RC[1]!="G" and GC(RC)>probeGC_min and GC(RC)<probeGC_max and RC.count("GGGG")==0 \
+                       and RC.count("AAAAAA")==0 and RC.count("CC")<=1 and dimer_check(RC, RC)<=1:
+                        Probe.append(RC) 
+
+                # 1st and 2nd residue at 5' end cannot be "G"; GC content meets requirement; No 4 consecutive "G" or 6 consecutive "A";
+                # less than 2 "CC" dinucleotides; less than one auto-dimer
+                elif Probe_target_seq [i:i+j][0]!="G" and Probe_target_seq [i:i+j][1]!="G" and GC(Probe_target_seq [i:i+j])>probeGC_min \
+                     and GC(Probe_target_seq [i:i+j])<probeGC_max and Probe_target_seq [i:i+j].count("GGGG")==0 \
+                     and Probe_target_seq [i:i+j].count("AAAAAA")==0 and Probe_target_seq [i:i+j].count("CC")<=1 \
+                     and dimer_check(Probe_target_seq [i:i+j], Probe_target_seq [i:i+j])<=1:
+                    Probe.append(Probe_target_seq[i:i+j])
+
+        # prompt the user to enter the name of output file
+        outfileName = input("\nWhat file should the primer/probe sequences go in: " ) 
+        outfile = open(outfileName, "w") 
+    
+        # set a number to record the number of identified primer/probe combinations
+        N=0 
+        # determine acceptable primer/probe combinations
+        for i in range(len(FwPrimer)): 
+            for j in range(len(RevPrimer)):
+                for k in range (len(Probe)):
+                    # calculate PCR product length
+                    productlen=seq_record.seq.find(RevPrimer[j])-seq_record.seq.find(FwPrimer[i])+len(RevPrimer[j])
+                    # make sure the PCR product length is within the set range and the two primers forms no more than one dimer
+                    if productlen > productlen_min and productlen < productlen_max \
+                       and dimer_check(FwPrimer[i], reverse_complement(RevPrimer[j]))<=1:
+
+                        # If the probe is a reverse complement sequence of the original DNA fragment which contains more "G" than "C",
+                        # get the orginal DNA sequence in order to find the location of the probe in the DNA sequence.
+                        if seq_record.seq.find (Probe[k])==0:  
+                            Probe_rc=reverse_complement(Probe[k])
+                            # make sure the probe doesn't overlap with both primers, and the Tm of probe is
+                            # 10 degrees higher than that of primers, and is no more than 70 degrees.
+                            # ensure the probe forms no more than one dimer with either primer
+                            if seq_record.seq.find(Probe_rc)-seq_record.seq.find(FwPrimer[i])>=len(FwPrimer[i]) \
+                               and seq_record.seq.find(RevPrimer[j])-seq_record.seq.find(Probe_rc)>=len(Probe[k]) \
+                               and Melt_temp(Probe[k])-Melt_temp(FwPrimer[i])>=10 and Melt_temp(Probe[k])-Melt_temp(RevPrimer[j])>=10 \
+                               and Melt_temp(Probe[k])<=70 and dimer_check(Probe_rc, FwPrimer[i])<=1 \
+                               and dimer_check(Probe_rc, reverse_complement(RevPrimer[j]))<=1:    
+                                # print foward and reverse primer sequence and length
+                                print("\nPrimer pair: Fw:", FwPrimer[i],",", len(FwPrimer[i]),"bp", "; Rev:", \
+                                      reverse_complement(RevPrimer[j]),",", len(RevPrimer[j]),"bp") 
+                                # print probe sequence with 5' repoter and 3' quencher groups and probe length
+                                print("\nProbe: 6FAM-",Probe[k],"-TAMRA",",",  len(Probe[k]),"bp")
+                                # print the length of the PCR product
+                                print("\nProduct length: ", productlen, "bp")
+                                print("\n")
+                            
+                                # record the number of usable primer/probe combination
+                                N=N+1 
+
+                                # store the information of this primer/probe combination in a single string
+                                primer_probe="Primer pair: Fw: " + FwPrimer[i] + ", " + str(len(FwPrimer[i]))+ \
+                                              " bp; Rev : " + reverse_complement(RevPrimer[j])+ ", " + str(len(RevPrimer[j]))+ \
+                                              "bp\nProbe: 6FAM-" + Probe[k]+ "-TAMRA " + ", " + str(len(Probe[k]))+ \
+                                              " bp\nProduct length: "+ str(productlen)+" bp\n\n"
+                                # deliver the string information into the output file
+                                outfile.write(str(primer_probe)) 
+
+                        # if this probe is taken directly from the original sequence, find the location of the probe directly and do the same thing as above.          
+                        elif seq_record.seq.find(Probe[k])-seq_record.seq.find(FwPrimer[i])>=len(FwPrimer[i]) \
+                             and seq_record.seq.find(RevPrimer[j])-seq_record.seq.find(Probe[k])>=len(Probe[k]) \
+                             and Melt_temp(Probe[k])-Melt_temp(FwPrimer[i])>=10 and Melt_temp(Probe[k])-Melt_temp(RevPrimer[j])>=10 \
+                             and Melt_temp(Probe[k])<=70 and dimer_check(Probe[k], FwPrimer[i])<=1 \
+                             and dimer_check(Probe[k], reverse_complement(RevPrimer[j]))<=1:
+                            print("\nPrimer pair: Fw:", FwPrimer[i],",", len(FwPrimer[i]),"bp", "; Rev:", \
+                                  reverse_complement(RevPrimer[j]),",", len(RevPrimer[j]),"bp")
+                            print("\nProbe: 6FAM-",Probe[k],"-TAMRA",",", len(Probe[k]),"bp")
+                            print("\nProduct length: ", productlen, "bp")
+                            print("\n")
+
+                            N=N+1
+
+                            primer_probe="Primer pair: Fw: " + FwPrimer[i] + ", " + str(len(FwPrimer[i]))+ " bp; Rev : " \
+                                          + reverse_complement(RevPrimer[j])+ ", " + str(len(RevPrimer[j]))+ "bp\nProbe: 6FAM-" \
+                                          + Probe[k]+ "-TAMRA " + ", " + str(len(Probe[k]))+ " bp\nProduct length: "+ str(productlen)+" bp\n\n"
+                            outfile.write(str(primer_probe))
+                
+                    # when the number of identified primer/probe combination reach the set number,
+                    # stop looking for more combinations, break the most outside loop.
+                    while N==Result_Num:
+                        return  
+        outfile.close()
+
+        # If at least one primer/probe combination is found, break the most outside while loop.
+        if N>0:
+            break
+
+        # If the number acceptable primer/probe combinations remains zero after the loop,
+        # whihc suggests that no primer/probe combination could be identified with the entered parameters,
+        # prompt the user to modify the parameters, and automatically rerun the program
+        elif N==0: 
+            print("\nNO AVAILABLE PRIMER/PROBE COMBINATIONS, PLEASE MODIFY THE PARAMETERS!")
+            print("\n********************************************************************\n")        
+     
+main()
+                                                                                                                                                                                                                                                                                                                      
