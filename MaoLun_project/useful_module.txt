@@ -1,0 +1,3 @@
+# pysam module - manipulate sam/bam genome mapping files
+
+# argparse module - parse out arguments from command line
