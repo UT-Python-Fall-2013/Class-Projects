@@ -1,0 +1,33 @@
+
+#Determine the DNA methylation level
+import sys
+file=[ ]
+for i in range(1,6):
+		file.append('Chr 0'+str(i))
+number={'CG':[0 for i in range(4)],'CHG':[0 for i in range(4)],'CHH':[0 for i in range(4)]}
+for i in file:
+	try:
+		tmpfile=open(sys.argv[1]+'/'+i)
+	except IOError:
+		print('File '+i+' open failed')
+	for j in tmpfile:
+		line=j.strip().split('\t')
+		flag=1
+		for m in range(4,len(line),2):
+			if int(line[m])+int(line[m+1])<1:
+				flag=0
+				break
+		if flag==0:
+			continue
+		number[line[3]][0]+=1
+		for m in range(4,len(line),2):
+			if float(line[m]) >int(line[m+1]):
+				number[line[3]][(m-4)/2+1]+=1
+			
+OUT=open(sys.argv[2],mode='w')
+OUT.write('total CG: '+str(number['CG'][0])+'\n'+'Sample methylated CG: ')
+OUT.write('\t'.join([str(i) for i in number['CG'][1:]])+'\n')
+OUT.write('total CHG: '+str(number['CHG'][0])+'\n'+'Sample methylated CHG: ')
+OUT.write('\t'.join([str(i) for i in number['CHG'][1:]])+'\n')
+OUT.write('total CHH: '+str(number['CHH'][0])+'\n'+'Sample methylated CHH: ')
+OUT.write('\t'.join([str(i) for i in number['CHH'][1:]])+'\n')
